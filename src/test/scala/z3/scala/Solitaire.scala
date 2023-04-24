@@ -1,6 +1,7 @@
 package z3.scala
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
+import z3.scala.dsl.Operands.BoolOperand
 import z3.scala.dsl.{And, *, given}
 
 import scala.language.implicitConversions
@@ -28,42 +29,33 @@ object HeuleEncodings:
   def exactlyOne(v: Seq[Tree[BoolSort]]): Tree[BoolSort] =
     And(atMostOne(v), atLeastOne(v))
 
+trait Constraints:
+  def diffConstraints: Distinct[IntSort]
+  def boundsConstraints: Seq[BoolOperand]
+  def prevConstraint: Seq[Tree[BoolSort]]
+  def firstPosConstraint: Eq[IntSort]
 
-class Solitaire extends AnyFunSuite with Matchers {
-  import dsl._
+object Constraints:
 
-  test("Solitaire") {
+  def apply(cells: Seq[Seq[IntVar]], width: Int, height: Int): Constraints =
+    SolitaireConstraints(cells, width, height)
 
-    val width = 5
-    val height = 5
+  private class SolitaireConstraints(cells: Seq[Seq[IntVar]], width: Int, height: Int) extends Constraints:
+
     val offsets: Seq[(Int, Int)] = Seq((-3, 0), (3, 0), (2, -2), (2, 2),
       (-2, 2), (-2, -2), (0, 3), (0, -3))
-    val ctx = new Z3Context("MODEL" -> true)
 
-    def render(solution: Seq[(Int, Int)], width: Int, height: Int): String =
-      val rows =
-        for y <- 0 until height
-            row = for x <- 0 until width
-                      number = solution.indexOf((x, y)) + 1
-            yield if number > 0 then "%-2d ".format(number) else "X  "
-        yield row.mkString
-      rows.mkString("\n")
-
-    def computePrevPos(r: Int, c: Int): Seq[(Int, Int)] =
+    private def computePrevPos(r: Int, c: Int): Seq[(Int, Int)] =
       offsets
         .map((or, oc) => (or + r, oc + c))
         .filter((or, oc) => or >= 0 && or < height &&
           oc >= 0 && oc < width)
 
-    /* Declaring column variables */
-    val cells = (0 until height).map(_ => (0 until width).map(_ => IntVar()))
-
-    /* Constraints */
-
     // Each placing is on a different cell
-    val diffConstraint = Distinct(cells.flatten: _*)
+    override def diffConstraints: Distinct[IntSort] = Distinct(cells.flatten: _*)
+
     // The numbers are between 0 to (width * size)
-    val boundsConstraint =
+    override def boundsConstraints: Seq[BoolOperand] =
       for
         c <- 0 until width
         r <- 0 until height
@@ -74,7 +66,7 @@ class Solitaire extends AnyFunSuite with Matchers {
       exactly one position between the previous possible ones with value i-1.
       There's an exception on the central position: its value is 1 and there's no 0.
     */
-    val prevConstraint =
+    override def prevConstraint: Seq[Tree[BoolSort]] =
       for
         c <- 0 until width
         r <- 0 until height
@@ -84,23 +76,45 @@ class Solitaire extends AnyFunSuite with Matchers {
           .map((nr, nc) => Eq(cells(nr)(nc), cells(r)(c) - 1)))
 
     // The first placing must be done on the central position
-    val firstPosCnstr = Eq(cells(height / 2)(width / 2), 1)
+    override def firstPosConstraint: Eq[IntSort] =
+      Eq(cells(height / 2)(width / 2), 1)
+
+class Solitaire extends AnyFunSuite with Matchers {
+  import dsl._
+
+  def render(solution: Seq[(Int, Int)], width: Int, height: Int): String =
+    val rows =
+      for y <- 0 until height
+          row = for x <- 0 until width
+                    number = solution.indexOf((x, y)) + 1
+          yield if number > 0 then "%-2d ".format(number) else "X  "
+      yield row.mkString
+    rows.mkString("\n")
+
+  test("Solitaire") {
+
+    val width = 5
+    val height = 5
+    // Declare the cells of the grid as IntVar(s)
+    val cells = (0 until height).map(_ => (0 until width).map(_ => IntVar()))
 
     // Solver
+    val ctx = new Z3Context("MODEL" -> true)
     val solver = ctx.mkSolver()
 
     // Add constraints
-    solver.assertCnstr(diffConstraint)
-    boundsConstraint foreach (solver.assertCnstr(_))
-    solver.assertCnstr(firstPosCnstr)
-    prevConstraint foreach solver.assertCnstr
+    val constraints = Constraints(cells, width, height)
+    solver.assertCnstr(constraints.diffConstraints)
+    constraints.boundsConstraints foreach (solver.assertCnstr(_))
+    constraints.prevConstraint foreach solver.assertCnstr
+    solver.assertCnstr(constraints.firstPosConstraint)
 
     // Check if it's SAT
     val (testModels, renderModels) = solver.checkAndGetAllModels().duplicate
 
     // Must be SAT with 352 possible solutions
-    solver.check() should equal (Some(true))
-    testModels.size should equal (352)
+    solver.check() should equal(Some(true))
+    testModels.size should equal(352)
 
     // Print all the solutions
     /* renderModels.foreach(m =>
@@ -110,6 +124,7 @@ class Solitaire extends AnyFunSuite with Matchers {
       yield (r, c, m.evalAs[Int](cells(r)(c).ast(ctx)).get)
       println(render(eval.sortBy((_, _, e) => e).map((r, c, _) => (r, c)), width, height) + '\n')
     ) */
+
     ctx.delete()
   }
 }
