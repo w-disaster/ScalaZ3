@@ -7,7 +7,6 @@ import z3.scala.dsl.{And, *, given}
 import scala.language.implicitConversions
 
 object HeuleEncodings:
-
   private def atMostOneNp(v: Seq[Tree[BoolSort]]): Seq[Tree[BoolSort]] =
     val r = for
       p <- v.combinations(2)
@@ -29,55 +28,44 @@ object HeuleEncodings:
   def exactlyOne(v: Seq[Tree[BoolSort]]): Tree[BoolSort] =
     And(atMostOne(v), atLeastOne(v))
 
-trait Constraints:
-  def diffConstraints: Distinct[IntSort]
-  def boundsConstraints: Seq[BoolOperand]
-  def prevConstraint: Seq[Tree[BoolSort]]
-  def firstPosConstraint: Eq[IntSort]
+class Constraints(cells: Seq[Seq[IntVar]], width: Int, height: Int):
 
-object Constraints:
+  private val offsets: Seq[(Int, Int)] = Seq((-3, 0), (3, 0), (2, -2), (2, 2),
+    (-2, 2), (-2, -2), (0, 3), (0, -3))
 
-  def apply(cells: Seq[Seq[IntVar]], width: Int, height: Int): Constraints =
-    SolitaireConstraints(cells, width, height)
+  private def computePrevPos(r: Int, c: Int): Seq[(Int, Int)] =
+    this.offsets
+      .map((or, oc) => (or + r, oc + c))
+      .filter((or, oc) => or >= 0 && or < this.height &&
+        oc >= 0 && oc < this.width)
 
-  private class SolitaireConstraints(cells: Seq[Seq[IntVar]], width: Int, height: Int) extends Constraints:
+  // Each placing is on a different cell
+  def diffConstraints: Distinct[IntSort] = Distinct(this.cells.flatten: _*)
 
-    val offsets: Seq[(Int, Int)] = Seq((-3, 0), (3, 0), (2, -2), (2, 2),
-      (-2, 2), (-2, -2), (0, 3), (0, -3))
+  // The numbers are between 0 to (width * size)
+  def boundsConstraints: Seq[BoolOperand] =
+    for
+      c <- 0 until this.width
+      r <- 0 until this.height
+    yield this.cells(r)(c) > 0 && this.cells(r)(c) <= this.width * this.height
 
-    private def computePrevPos(r: Int, c: Int): Seq[(Int, Int)] =
-      offsets
-        .map((or, oc) => (or + r, oc + c))
-        .filter((or, oc) => or >= 0 && or < height &&
-          oc >= 0 && oc < width)
+  /*
+    Given a cell of position (r, c) and its value i, there must be
+    exactly one position between the previous possible ones with value i-1.
+    There's an exception on the central position: its value is 1 and there's no 0.
+  */
+  def prevConstraint: Seq[Tree[BoolSort]] =
+    for
+      c <- 0 until this.width
+      r <- 0 until this.height
+      if !(c == this.width / 2 && r == this.height / 2)
+    yield
+      HeuleEncodings.exactlyOne(computePrevPos(r, c)
+        .map((nr, nc) => Eq(this.cells(nr)(nc), this.cells(r)(c) - 1)))
 
-    // Each placing is on a different cell
-    override def diffConstraints: Distinct[IntSort] = Distinct(cells.flatten: _*)
-
-    // The numbers are between 0 to (width * size)
-    override def boundsConstraints: Seq[BoolOperand] =
-      for
-        c <- 0 until width
-        r <- 0 until height
-      yield cells(r)(c) > 0 && cells(r)(c) <= width * height
-
-    /*
-      Given a cell of position (r, c) and its value i, there must be
-      exactly one position between the previous possible ones with value i-1.
-      There's an exception on the central position: its value is 1 and there's no 0.
-    */
-    override def prevConstraint: Seq[Tree[BoolSort]] =
-      for
-        c <- 0 until width
-        r <- 0 until height
-        if !(c == width / 2 && r == height / 2)
-      yield
-        HeuleEncodings.exactlyOne(computePrevPos(r, c)
-          .map((nr, nc) => Eq(cells(nr)(nc), cells(r)(c) - 1)))
-
-    // The first placing must be done on the central position
-    override def firstPosConstraint: Eq[IntSort] =
-      Eq(cells(height / 2)(width / 2), 1)
+  // The first placing must be done on the central position
+  def firstPosConstraint: Eq[IntSort] =
+    Eq(this.cells(this.height / 2)(this.width / 2), 1)
 
 class Solitaire extends AnyFunSuite with Matchers {
   import dsl._
