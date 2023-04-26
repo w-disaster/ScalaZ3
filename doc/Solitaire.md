@@ -6,7 +6,7 @@ Given a propositional formula, i.e. a set of boolean variables and a set of cons
 
 In particular, in this exercise the [SMT](https://en.wikipedia.org/wiki/Satisfiability_modulo_theories) (Satisfability Modulo Theorem) has been exploited, which is a generalization of the SAT where also integer, real number and more complex formulas can be used.
 
-In the literature, there are a lot of SAT/SMT solvers, most of them implemented using the DPLL alorithm, as for example [z3](https://github.com/Z3Prover/z3), written in Python.
+In the literature, there are a lot of SAT/SMT solvers, most of them implemented using the DPLL alorithm, as for example [z3](https://github.com/Z3Prover/z3), written in C++.
 
 
 In Scala there aren't much repos available but I found this one which is a DSL for constraint solving with z3 
