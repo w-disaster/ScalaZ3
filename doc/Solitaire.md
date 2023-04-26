@@ -36,13 +36,13 @@ The grid of the Solitaire is implemented as a matrix of width $w$ and height $h$
 
 - The central position of the grid has always value equal to $1$ because it's the first placing:
 
-    $$\texttt{firstPlacingConstraint($c$)} :=  c_{w / 2, h/2} = 1$$
+    $$\texttt{firstPlacingConstraint($c$)} :=  c_{h / 2, w/2} = 1$$
 
-- Previous position constraint. If the $k$-marking is done at position $(i,j)$, there must be exactly one position in the possible previous marking positions which has value $k-1$.
+- Previous marking constraint. If the position $(i,j)$ has value equal to $k$, there must be exactly one position in the possible previous marking positions with value $k-1$.
 
-    NB: the previous possible position offsets are equal to the next possible ones. Given the position $(i, j)$, the previous marking could've been done in:
+    NB: the previous possible marking offsets are equal to the next possible ones. Given the position $(i, j)$, the previous marking could've been done in one of $P_{i,j}$ cell.
 
-    $\{(i+3,j), (i-3, j), (i, j+3), (i, j-3), (i+2,j+2), (i+2,j-2), (i-2,j+2), (i-2,j-2)\}$
+    $P_{i,j} = \{(i+3,j), (i-3, j), (i, j+3), (i, j-3), (i+2,j+2), (i+2,j-2), (i-2,j+2), (i-2,j-2)\}$
 
     This constraint holds for all the cells, with the exception of the central one where the first placing is done: there's no previous marking.
 
@@ -61,6 +61,10 @@ The grid of the Solitaire is implemented as a matrix of width $w$ and height $h$
     
         Anyway, in this implementation I used the Heule Encoding (one of many available in literature), which can reduce, with the respect of the pairwise one, the number of clauses to $O(n)$ introducing new $O(n)$ variables.
 
+    Summarizing, it must hold:
+    $$\texttt{prevConstraint($c$)} :=  \bigwedge\limits_{i=0}^h \bigwedge\limits_{j=0}^w \texttt{exactlyOne($P_{i,j}(c)$)}$$
+    
+    where $i \neq h/2, j \neq w/2$.
 
     
 ### $\texttt{atMostOne}$: Heule encoding
