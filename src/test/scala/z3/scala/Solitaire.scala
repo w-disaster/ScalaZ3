@@ -33,7 +33,7 @@ class Constraints(cells: Seq[Seq[IntVar]], width: Int, height: Int):
   private val offsets: Seq[(Int, Int)] = Seq((-3, 0), (3, 0), (2, -2), (2, 2),
     (-2, 2), (-2, -2), (0, 3), (0, -3))
 
-  private def computePrevPos(r: Int, c: Int): Seq[(Int, Int)] =
+  private def computePrevMark(r: Int, c: Int): Seq[(Int, Int)] =
     this.offsets
       .map((or, oc) => (or + r, oc + c))
       .filter((or, oc) => or >= 0 && or < this.height &&
@@ -60,11 +60,11 @@ class Constraints(cells: Seq[Seq[IntVar]], width: Int, height: Int):
       r <- 0 until this.height
       if !(c == this.width / 2 && r == this.height / 2)
     yield
-      HeuleEncodings.exactlyOne(computePrevPos(r, c)
+      HeuleEncodings.exactlyOne(computePrevMark(r, c)
         .map((nr, nc) => Eq(this.cells(nr)(nc), this.cells(r)(c) - 1)))
 
   // The first placing must be done on the central position
-  def firstPosConstraint: Eq[IntSort] =
+  def firstMarkConstraint: Eq[IntSort] =
     Eq(this.cells(this.height / 2)(this.width / 2), 1)
 
 class Solitaire extends AnyFunSuite with Matchers {
@@ -95,7 +95,7 @@ class Solitaire extends AnyFunSuite with Matchers {
     solver.assertCnstr(constraints.diffConstraints)
     constraints.boundsConstraints foreach (solver.assertCnstr(_))
     constraints.prevConstraint foreach solver.assertCnstr
-    solver.assertCnstr(constraints.firstPosConstraint)
+    solver.assertCnstr(constraints.firstMarkConstraint)
 
     // Check if it's SAT
     val (testModels, renderModels) = solver.checkAndGetAllModels().duplicate
