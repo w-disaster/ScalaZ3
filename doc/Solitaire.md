@@ -8,13 +8,17 @@ In particular, in this exercise the [SMT](https://en.wikipedia.org/wiki/Satisfia
 
 In the literature, there are a lot of SAT/SMT solvers, most of them implemented using the DPLL alorithm, as for example [z3](https://github.com/Z3Prover/z3), written in Python.
 
+
+In Scala there aren't much repos available but I found this one which is a DSL for constraint solving with z3 
+
+### Applications
+
 This solvers have a lot of applications including:
 - Model checking to verify the logical formulas;
 - Hardware verification, scheduling, planning etc. 
-- In security, in Return-Oriented Programming (ROP) to find appropriate gadgets in a binary file or to find hardware trojans inside circuits;
+- In security, in Return-Oriented Programming (ROP) to find appropriate gadgets in a binary file; to detect hardware trojans inside IC also.
 
 
-In Scala there aren't much repos available but I found this one which is a DSL for constraint solving with z3 
 
 ## Modeling
 
@@ -24,21 +28,21 @@ The grid of the Solitaire is implemented as a matrix of width $w$ and height $h$
 
 - Bound constraint: each cell of the grid can assume a value between $1$ and $w * h$ (included):
     
-    $$\texttt{boundConstraint(\text{$c$})} :=  \bigwedge\limits_{i=0}^h \bigwedge\limits_{j=0}^w (c_{i, j} > 0 \land c_{i, j} \leq w * h)$$
+    $$\texttt{boundConstraint($c$)} :=  \bigwedge\limits_{i=0}^h \bigwedge\limits_{j=0}^w (c_{i, j} > 0 \land c_{i, j} \leq w * h)$$
 
 - The integers assigned to the cells must be all different. Let $c'$ be the matrix $c$ flattened. The constraint can be expressed as:
 
-    $$\texttt{allDiffConstraint(\text{$c'$})} := \bigwedge\limits_{0 \leq i<j<w*h} c'_i \neq  c'_j$$
+    $$\texttt{allDiffConstraint($c'$)} := \bigwedge \limits_{0 \leq i < j < w*h} c'_i \neq  c'_j$$
 
 - The central position of the grid has always value equal to $1$ because it's the first placing:
 
-    $$\texttt{firstPlacingConstraint(\text{$c$})} :=  c_{w / 2, h/2} = 1$$
+    $$\texttt{firstPlacingConstraint($c$)} :=  c_{w / 2, h/2} = 1$$
 
 - Previous position constraint. If the $k$-marking is done at position $(i,j)$, there must be exactly one position in the possible previous marking positions which has value $k-1$.
 
     NB: the previous possible position offsets are equal to the next possible ones. Given the position $(i, j)$, the previous marking could've been done in:
 
-    $$\{(i+3,j), (i-3, j), (i, j+3), (i, j-3), (i+2,j+2), (i+2,j-2), (i-2,j+2), (i-2,j-2)\}$$
+    $\{(i+3,j), (i-3, j), (i, j+3), (i, j-3), (i+2,j+2), (i+2,j-2), (i-2,j+2), (i-2,j-2)\}$
 
     This constraint holds for all the cells, with the exception of the central one where the first placing is done: there's no previous marking.
 
@@ -52,7 +56,7 @@ The grid of the Solitaire is implemented as a matrix of width $w$ and height $h$
 
     - The $\texttt{atMostOne}$ using a pairwise encoding (any combinations of two variables cannot be true at the same time)
 
-        $$\bigwedge\limits_{0 \leq i<j<w*h} \lnot(v_i \land v_j)$$
+        $$\bigwedge \limits_{0 \leq i < j < w*h} \lnot(v_i \land v_j)$$
     
     
         Anyway, in this implementation I used the Heule Encoding (one of many available in literature), which can reduce, with the respect of the pairwise one, the number of clauses to $O(n)$ introducing new $O(n)$ variables.
