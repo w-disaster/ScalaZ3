@@ -56,7 +56,7 @@ The grid of the Solitaire is implemented as a matrix of width $w$ and height $h$
 
     - The $\texttt{atMostOne}$ using a pairwise encoding (any combinations of two variables cannot be true at the same time)
 
-        $$\bigwedge \limits_{0 \leq i < j < w*h} \lnot(v_i \land v_j)$$
+        $$\texttt{atMostOne}(v) := \bigwedge \limits_{0 \leq i < j < w*h} \lnot(v_i \land v_j)$$
     
     
         Anyway, in this implementation I used the Heule Encoding (one of many available in literature), which can reduce, with the respect of the pairwise one, the number of clauses to $O(n)$ introducing new $O(n)$ variables.
