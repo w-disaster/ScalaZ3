@@ -16,7 +16,7 @@ In Scala there aren't much repos available but I found this one which is a DSL f
 This solvers have a lot of applications including:
 - Model checking to verify the logical formulas;
 - Hardware verification, scheduling, planning etc. 
-- In security, in Return-Oriented Programming (ROP) to find appropriate gadgets in a binary file; to detect hardware trojans inside IC also.
+- In security, in Return-Oriented Programming ([ROP](https://github.com/sashs/Ropper)) to find appropriate gadgets in a binary file; to attack [logic locking](https://link.springer.com/book/10.1007/978-3-030-15334-2) mechanisms inside ICs also.
 
 
 
